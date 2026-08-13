@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Controle Expoagas | Gestão de estoque e vendas no varejo</title>
+<meta name="description" content="Protótipo AppJam Expoagas: controle de estoque, registro de vendas, alertas de ruptura e indicadores de faturamento para supermercados." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --fg:#14181f; --muted:#6b7280; --border:#e5e7eb;
+  --primary:#0f5132; --primary-2:#157347; --primary-fg:#ffffff;
+  --success:#15803d; --danger:#b91c1c; --secondary:#eef2f0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif}
+h1,h2,.display{font-family:Manrope,system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header.hero{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:var(--primary-fg)}
+header.hero .wrap{padding:48px 20px}
+.badge{display:inline-block;background:rgba(255,255,255,.16);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+h1{font-size:clamp(26px,4vw,44px);margin:18px 0 0;max-width:800px}
+header.hero p{max-width:640px;opacity:.9;line-height:1.6;margin-top:14px}
+nav{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:16px;font:600 14px Inter,sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--primary);border-color:var(--primary)}
+main{padding:40px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.grid{display:grid;gap:16px}
+@media(min-width:700px){.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}.span2{grid-column:span 2}}
+.kpi p.l{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.kpi p.v{margin:8px 0 0;font:800 26px Manrope,sans-serif;color:var(--primary)}
+label{display:block;font-size:14px;font-weight:500}
+.field{width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:400 14px Inter,sans-serif;background:#fff}
+.field:focus{outline:2px solid var(--primary-2);outline-offset:1px}
+.btn{background:var(--primary);color:#fff;border:0;border-radius:10px;padding:11px 20px;font:600 14px Inter,sans-serif;cursor:pointer}
+.btn:hover{background:var(--primary-2)}
+.btn-ghost{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font:600 12px Inter,sans-serif;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:12px 12px 12px 0;border-bottom:1px solid var(--border)}
+td{padding:12px 12px 12px 0;border-bottom:1px solid var(--border)}
+.tag{border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}
+.ok{background:#dcfce7;color:var(--success)} .bad{background:#fee2e2;color:var(--danger)}
+.msg{margin-top:16px;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:500}
+.muted{color:var(--muted)}
+footer{border-top:1px solid var(--border);background:#fff}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;padding:28px 20px;font-size:14px;color:var(--muted)}
+.hidden{display:none}
+.total{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;background:var(--secondary);border-radius:14px;padding:20px 24px;margin-top:24px}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <span class="badge">AppJam · Expoagas 2026</span>
+  <h1>Controle Expoagas: estoque, vendas e decisão em uma única tela</h1>
+  <p>Pequenos e médios supermercados perdem faturamento com ruptura de gôndola e falta de visão do estoque. Este protótipo unifica cadastro de produtos, baixa automática de estoque, alerta de reposição e relatório de faturamento.</p>
+</div></header>
+
+<nav><div class="wrap" id="abas"></div></nav>
+
+<main class="wrap" id="conteudo"></main>
+
+<footer><div class="wrap">
+  <div><strong style="color:var(--fg)">Equipe</strong><br>Adicione aqui nome e e-mail de cada integrante do grupo.</div>
+  <button class="btn-ghost" onclick="restaurar()">Restaurar dados de demonstração</button>
+</div></footer>
+
+<script>
+const CATEGORIAS=["Mercearia","Hortifrúti","Bebidas","Frios e Laticínios","Limpeza","Padaria"];
+const KEY="controle-expoagas-portatil-v1";
+const d=n=>new Date(Date.now()-n*86400000).toISOString();
+const INICIAL={produtos:[
+ {id:1,nome:"Arroz Tipo 1 5kg",categoria:"Mercearia",quantidade:48,estoqueMinimo:20,preco:27.9,custo:21.5},
+ {id:2,nome:"Feijão Preto 1kg",categoria:"Mercearia",quantidade:12,estoqueMinimo:25,preco:8.49,custo:6.2},
+ {id:3,nome:"Leite Integral 1L",categoria:"Frios e Laticínios",quantidade:96,estoqueMinimo:40,preco:5.29,custo:4.1},
+ {id:4,nome:"Café Torrado 500g",categoria:"Mercearia",quantidade:30,estoqueMinimo:15,preco:19.9,custo:14.8},
+ {id:5,nome:"Refrigerante 2L",categoria:"Bebidas",quantidade:8,estoqueMinimo:24,preco:9.99,custo:7.3},
+ {id:6,nome:"Detergente 500ml",categoria:"Limpeza",quantidade:64,estoqueMinimo:20,preco:3.19,custo:2.1},
+ {id:7,nome:"Banana Prata kg",categoria:"Hortifrúti",quantidade:35,estoqueMinimo:15,preco:6.99,custo:4.4},
+ {id:8,nome:"Pão Francês kg",categoria:"Padaria",quantidade:22,estoqueMinimo:10,preco:18.9,custo:11.2}],
+ vendas:[
+ {id:1,produtoId:1,produto:"Arroz Tipo 1 5kg",quantidade:12,valorTotal:334.8,lucro:76.8,data:d(4)},
+ {id:2,produtoId:3,produto:"Leite Integral 1L",quantidade:40,valorTotal:211.6,lucro:47.6,data:d(3)},
+ {id:3,produtoId:5,produto:"Refrigerante 2L",quantidade:26,valorTotal:259.74,lucro:69.94,data:d(2)},
+ {id:4,produtoId:4,produto:"Café Torrado 500g",quantidade:15,valorTotal:298.5,lucro:76.5,data:d(1)},
+ {id:5,produtoId:8,produto:"Pão Francês kg",quantidade:9,valorTotal:170.1,lucro:69.3,data:d(0)}]};
+
+let estado;
+try{estado=JSON.parse(localStorage.getItem(KEY))||structuredClone(INICIAL);}catch(e){estado=structuredClone(INICIAL);}
+function salvar(){try{localStorage.setItem(KEY,JSON.stringify(estado));}catch(e){}render();}
+function restaurar(){estado=structuredClone(INICIAL);busca="";salvar();}
+const moeda=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const dataCurta=i=>new Date(i).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const ABAS=[["painel","Painel"],["cadastro","Cadastrar Produto"],["estoque","Estoque"],["venda","Registrar Venda"],["relatorio","Relatório de Vendas"]];
+let aba="painel", busca="", aviso=null;
+
+function msg(){return aviso?`<p class="msg" style="background:${aviso.tipo==="ok"?"#dcfce7":"#fee2e2"};color:${aviso.tipo==="ok"?"var(--success)":"var(--danger)"}">${esc(aviso.texto)}</p>`:"";}
+
+function painel(){
+ const p=estado.produtos, v=estado.vendas;
+ const fat=v.reduce((s,x)=>s+x.valorTotal,0), luc=v.reduce((s,x)=>s+x.lucro,0);
+ const criticos=p.filter(x=>x.quantidade<x.estoqueMinimo);
+ const valorEstoque=p.reduce((s,x)=>s+x.quantidade*x.custo,0);
+ const kpi=(l,val)=>`<div class="card kpi"><p class="l">${l}</p><p class="v">${val}</p></div>`;
+ return `<div class="grid g4">
+  ${kpi("Faturamento total",moeda(fat))}${kpi("Margem bruta",moeda(luc))}
+  ${kpi("Valor em estoque",moeda(valorEstoque))}${kpi("Itens em ruptura",criticos.length)}
+ </div>
+ <section class="card" style="margin-top:20px">
+  <h2 style="margin:0">Alertas de reposição</h2>
+  <p class="muted" style="margin:6px 0 16px;font-size:14px">Produtos abaixo do estoque mínimo definido.</p>
+  <table><thead><tr><th>Produto</th><th>Qtd.</th><th>Mínimo</th><th>Repor</th></tr></thead><tbody>
+  ${criticos.map(x=>`<tr><td><strong>${esc(x.nome)}</strong></td><td>${x.quantidade}</td><td>${x.estoqueMinimo}</td><td><span class="tag bad">${x.estoqueMinimo-x.quantidade} un.</span></td></tr>`).join("")||`<tr><td colspan="4" class="muted" style="padding:24px 0;text-align:center">Nenhum produto em ruptura.</td></tr>`}
+  </tbody></table></section>`;
+}
+
+function cadastro(){
+ return `<section class="card"><h2 style="margin:0">Cadastrar produto</h2>
+ <p class="muted" style="margin:6px 0 20px;font-size:14px">Os dados alimentam o estoque, as vendas e os indicadores automaticamente.</p>
+ <form class="grid g2" style="max-width:680px" onsubmit="cadastrar(event)">
+  <label class="span2">Nome do produto<input class="field" name="nome" required placeholder="Ex.: Arroz Tipo 1 5kg"></label>
+  <label>Categoria<select class="field" name="categoria">${CATEGORIAS.map(c=>`<option>${c}</option>`).join("")}</select></label>
+  <label>Quantidade em estoque<input class="field" type="number" min="0" value="0" name="quantidade" required></label>
+  <label>Estoque mínimo<input class="field" type="number" min="0" value="10" name="estoqueMinimo" required></label>
+  <label>Custo unitário (R$)<input class="field" type="number" min="0" step="0.01" value="0" name="custo" required></label>
+  <label class="span2">Preço de venda (R$)<input class="field" type="number" min="0" step="0.01" value="0" name="preco" required></label>
+  <div class="span2"><button class="btn">Cadastrar produto</button></div>
+ </form>${msg()}</section>`;
+}
+function cadastrar(e){e.preventDefault();const f=new FormData(e.target);const nome=String(f.get("nome")).trim();
+ if(!nome){aviso={tipo:"erro",texto:"Informe o nome do produto."};return render();}
+ estado.produtos.push({id:Math.max(0,...estado.produtos.map(p=>p.id))+1,nome,categoria:f.get("categoria"),
+  quantidade:+f.get("quantidade"),estoqueMinimo:+f.get("estoqueMinimo"),preco:+f.get("preco"),custo:+f.get("custo")});
+ aviso={tipo:"ok",texto:`Produto "${nome}" cadastrado com sucesso.`};salvar();}
+
+function estoque(){
+ const lista=estado.produtos.filter(p=>(p.nome+" "+p.categoria).toLowerCase().includes(busca.toLowerCase()));
+ return `<section class="card">
+ <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:end">
+  <div><h2 style="margin:0">Estoque</h2><p class="muted" style="margin:6px 0 0;font-size:14px">${estado.produtos.length} produtos cadastrados</p></div>
+  <input class="field" style="max-width:280px" placeholder="Buscar produto ou categoria" value="${esc(busca)}" oninput="busca=this.value;render();document.getElementById('bs')&&document.getElementById('bs').focus()" id="bs">
+ </div>
+ <table style="margin-top:20px"><thead><tr><th>ID</th><th>Produto</th><th>Categoria</th><th>Qtd.</th><th>Preço</th><th>Situação</th><th>Ação</th></tr></thead><tbody>
+ ${lista.map(p=>{const c=p.quantidade<p.estoqueMinimo;return `<tr><td class="muted">${p.id}</td><td><strong>${esc(p.nome)}</strong></td><td class="muted">${esc(p.categoria)}</td><td>${p.quantidade}</td><td>${moeda(p.preco)}</td>
+ <td><span class="tag ${c?"bad":"ok"}">${c?"Repor":"Adequado"}</span></td><td><button class="btn-ghost" onclick="repor(${p.id})">+10 un.</button></td></tr>`;}).join("")
+ ||`<tr><td colspan="7" class="muted" style="padding:24px 0;text-align:center">Nenhum produto encontrado.</td></tr>`}
+ </tbody></table></section>`;
+}
+function repor(id){const p=estado.produtos.find(x=>x.id===id);p.quantidade+=10;salvar();}
+
+function venda(){
+ return `<section class="card"><h2 style="margin:0">Registrar venda</h2>
+ <p class="muted" style="margin:6px 0 20px;font-size:14px">O sistema valida o estoque disponível antes de concluir a operação.</p>
+ <form class="grid g2" style="max-width:680px" onsubmit="vender(event)">
+  <label class="span2">Produto<select class="field" name="produtoId" required><option value="">Selecione um produto</option>
+   ${estado.produtos.map(p=>`<option value="${p.id}">${esc(p.nome)} — estoque: ${p.quantidade}</option>`).join("")}</select></label>
+  <label>Quantidade vendida<input class="field" type="number" min="1" value="1" name="quantidade" required></label>
+  <div class="span2"><button class="btn">Registrar venda</button></div>
+ </form>${msg()}</section>`;
+}
+function vender(e){e.preventDefault();const f=new FormData(e.target);
+ const p=estado.produtos.find(x=>x.id===+f.get("produtoId"));const q=+f.get("quantidade");
+ if(!p){aviso={tipo:"erro",texto:"Produto não encontrado."};return render();}
+ if(q<=0){aviso={tipo:"erro",texto:"Informe uma quantidade válida."};return render();}
+ if(p.quantidade<q){aviso={tipo:"erro",texto:`Estoque insuficiente: restam ${p.quantidade} un. de ${p.nome}.`};return render();}
+ const valorTotal=q*p.preco, lucro=q*(p.preco-p.custo);
+ p.quantidade-=q;
+ estado.vendas.push({id:Math.max(0,...estado.vendas.map(v=>v.id))+1,produtoId:p.id,produto:p.nome,quantidade:q,valorTotal,lucro,data:new Date().toISOString()});
+ aviso={tipo:"ok",texto:`Venda registrada com sucesso! Valor: ${moeda(valorTotal)}`};salvar();}
+
+function relatorio(){
+ const v=[...estado.vendas].reverse();
+ const fat=estado.vendas.reduce((s,x)=>s+x.valorTotal,0), luc=estado.vendas.reduce((s,x)=>s+x.lucro,0);
+ return `<section class="card"><h2 style="margin:0">Relatório de vendas</h2>
+ <p class="muted" style="margin:6px 0 20px;font-size:14px">Histórico completo com faturamento e margem por operação.</p>
+ <table><thead><tr><th>Data</th><th>Produto</th><th>Qtd.</th><th>Valor total</th><th>Margem</th></tr></thead><tbody>
+ ${v.map(x=>`<tr><td class="muted">${dataCurta(x.data)}</td><td><strong>${esc(x.produto)}</strong></td><td>${x.quantidade}</td><td>${moeda(x.valorTotal)}</td><td style="color:var(--success)">${moeda(x.lucro)}</td></tr>`).join("")
+ ||`<tr><td colspan="5" class="muted" style="padding:24px 0;text-align:center">Nenhuma venda registrada.</td></tr>`}
+ </tbody></table>
+ <div class="total"><div><p class="l muted" style="margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase">Faturamento total</p>
+  <p style="margin:6px 0 0;font:800 28px Manrope,sans-serif;color:var(--primary)">${moeda(fat)}</p></div>
+  <div style="text-align:right"><p class="muted" style="margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase">Margem bruta</p>
+  <p style="margin:6px 0 0;font:800 24px Manrope,sans-serif;color:var(--success)">${moeda(luc)}</p></div></div></section>`;
+}
+
+function render(){
+ document.getElementById("abas").innerHTML=ABAS.map(([id,r])=>`<button class="${aba===id?"on":""}" onclick="ir('${id}')">${r}</button>`).join("");
+ document.getElementById("conteudo").innerHTML=({painel,cadastro,estoque,venda,relatorio})[aba]();
+}
+function ir(id){aba=id;aviso=null;render();}
+render();
+</script>
+</body>
+</html>
